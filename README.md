@@ -1,7 +1,7 @@
 # 🤖 AI Customer Support Agent
 
 An AI-powered customer support automation workflow built with **n8n, Google Gemini, REST APIs, and Google Sheets**.
-
+![n8n Workflow Architecture](workflow-architecture.png)
 The agent can understand customer requests, search products, look up orders, perform calculations, create support tickets, detect duplicate tickets, and assign ticket priority.
 
 ## 🚀 Features
