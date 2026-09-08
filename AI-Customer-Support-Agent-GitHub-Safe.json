@@ -1,0 +1,350 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "35bec114-baec-4ef4-b0de-646f8904ef94",
+      "name": "When chat message received",
+      "webhookId": "bb6aa13d-fc0a-4b7c-ad3d-cd47b1da39f3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a professional AI Customer Support Agent.\n\nYour responsibilities:\n- Answer customer questions clearly, accurately, politely, and concisely.\n- Help customers with products, orders, payments, refunds, and general support.\n- Use available tools whenever they are useful.\n- Use conversation memory when relevant.\n- Never invent order details, prices, policies, ticket information, or customer information.\n- If you don't have enough information, clearly say so and ask for the required details.\n- If a customer has a complex issue that cannot be resolved with available tools, recommend escalation to a human support representative.\n\nPRODUCT SEARCH:\n- When a customer asks about available products, product details, prices, ratings, categories, or descriptions, use the Product Search tool.\n- Only report product information returned by the tool.\n- Never invent product prices or details.\n\nORDER LOOKUP:\n- When a customer asks about an order and provides an Order ID, use the Order Lookup tool.\n- Find the record whose ID exactly matches the requested Order ID.\n- Only report information from the matching record.\n- If the Order ID is not found, clearly tell the customer that the order could not be found.\n- Never invent order status or delivery information.\n\nSUPPORT TICKETS:\n- Create a support ticket when the customer has an issue that requires support-team assistance.\n- Before creating a ticket, always use the Get Existing Tickets tool.\n- Compare the current issue with existing tickets using Customer Message, Order ID, and Status.\n- Only treat an existing ticket as a duplicate when it is Open and covers the same or very similar unresolved issue.\n- Do not treat every issue for the same Order ID as a duplicate.\n- If a matching Open ticket exists, do not create another ticket.\n- If no matching Open ticket exists, create a new ticket using the Append Row in Google Sheets tool.\n- Never create duplicate tickets for the same unresolved issue.\n\nPRIORITY:\n- High: urgent issues such as duplicate payment/charge, payment failure, security concerns, or serious account problems.\n- Medium: delayed orders, delivery problems, damaged/wrong items, or issues requiring support but not immediately critical.\n- Low: general questions, basic information requests, or non-urgent assistance.\n- Do not automatically choose High unless the issue meets the High priority criteria.\n\nTICKET RESPONSE:\n- When a new ticket is created, provide the Ticket ID, Priority, and Status.\n- When a duplicate ticket is found, tell the customer that an existing Open ticket already covers the issue.\n- Do not claim that a specific team has been notified or is actively investigating unless that information is actually available from a tool."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "e5ca1d9e-bd18-4ca7-b402-09e41f649b76",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        112
+      ],
+      "id": "1997616d-a698-457e-b173-9847645d9d35",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        208
+      ],
+      "id": "8dfb3a03-4432-4e83-bca3-ef58233bf82f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        960,
+        112
+      ],
+      "id": "7cef2a62-9d4a-420f-bcc0-6dfcfb6cdacc",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search the product catalog and retrieve product information such as name, price, rating, category, and description. Use this tool when the customer asks about available products or product details.",
+        "url": "https://dummyjson.com/products/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', `The product name or keyword that the customer wants to search for.`, 'string') }}"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        144
+      ],
+      "id": "3a30efff-52e3-4970-a3ff-5d86d80d97af",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to retrieve customer order data. When a customer provides an order ID, always use this tool and find the matching cart/order from the returned data. Only report information that exists in the API response.",
+        "url": "https://dummyjson.com/carts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        704,
+        176
+      ],
+      "id": "9b19b654-beb0-46ee-9825-c2fdf1063b8a",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "AI Support Tickets",
+          "cachedResultUrl": "YOUR_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_SHEET_URL#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticket ID": "={{ 'TKT-' + $now.toMillis() }}",
+            "Customer Message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Customer_Message', `The original message sent by the customer that requires support.`, 'string') }}",
+            "Order ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Order_ID', `The order ID provided by the customer. If the customer does not provide an order ID, leave this field empty.`, 'string') }}",
+            "Priority": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Priority', `Classify the support request priority as Low, Medium, or High. Use High for urgent issues, payment problems, or serious order problems.`, 'string') }}",
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', `Set the ticket status to Open when creating a new support ticket.`, 'string') }}",
+            "Session ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Session_ID', `Use the current customer conversation session ID for this support ticket`, 'string') }}",
+            "Created At": "={{ $now.setZone('Asia/Kolkata').toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Ticket ID",
+              "displayName": "Ticket ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Message",
+              "displayName": "Customer Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order ID",
+              "displayName": "Order ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Session ID",
+              "displayName": "Session ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        576,
+        192
+      ],
+      "id": "4872353c-4063-4c0d-ae6e-c55dbea23939",
+      "name": "Append row in sheet in Google Sheets"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Read existing support tickets from the AI Support Tickets Google Sheet. Use this tool to check whether a similar support ticket already exists before creating a new ticket. Compare the customer's current issue with existing Customer Message, Order ID, and Status. If an open ticket already covers the same or very similar issue, do not create a duplicate ticket.",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "AI Support Tickets",
+          "cachedResultUrl": "YOUR_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "YOUR_GOOGLE_SHEET_URL#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        256
+      ],
+      "id": "511b1da2-1b8d-417a-8203-f5914d28c8c6",
+      "name": "Get row(s) in sheet in Google Sheets"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "88597f2e-2089-4f46-86b7-3bc23e2db985",
+  "nodeGroups": [],
+  "id": "KcIUFrN5xFrJl2F1",
+  "tags": []
+}
